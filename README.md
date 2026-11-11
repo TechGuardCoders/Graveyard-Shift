@@ -56,6 +56,33 @@ run()
 
 Pure Python, zero dependencies. The clock, drain, maintenance, health, and restore hooks are all injectable, so the whole thing tests offline — no live network in CI.
 
+## Go implementation
+
+The same runner is also implemented in Go (`graveyard.go`), porting every Python test case to `graveyard_test.go`. Python remains the reference implementation.
+
+```go
+package main
+
+import (
+	gs "github.com/TechGuardCoders/Graveyard-Shift"
+)
+
+func main() {
+	gy, _ := gs.New(
+		[]string{"node-a", "node-b", "node-c"},
+		[2]int{2 * 60, 4 * 60}, // 02:00–04:00 local, wraps past midnight
+		func(node string) error { return nil },  // maintenance task
+		func(node string) bool { return true },  // health check
+		nil, nil, nil,                            // clock/drain/restore default
+	)
+
+	results := gy.Run() // one NodeResult per node
+	gy.Abort()          // stops after the current node
+}
+```
+
+Each `NodeResult` carries `Status` (`maintained` / `skipped-outside-window` / `aborted` / `failed`), `Drained`, `Healthy`, `Restored`, `Detail`, and `DurationS` — JSON-tagged for direct serialization.
+
 ## Tests
 
 ```bash
@@ -64,6 +91,12 @@ uv venv && .venv/Scripts/pip install pytest && .venv/Scripts/pytest -q
 
 10 tests covering ordering (one-at-a-time), window boundaries incl. midnight wrap, skip-vs-fail, abort before and mid-run, unhealthy-no-restore, drain failure, and per-node exception isolation.
 
+Go tests (same cases, plus window-boundary table):
+
+```bash
+go test ./... -v
+```
+
 ## CI
 
-GitHub Actions runs `pytest` on push. Badge: ![CI](https://github.com/TechGuardCoders/Graveyard-Shift/actions/workflows/ci.yml/badge.svg)
+GitHub Actions runs `pytest` and `go vet` + `go test ./...` on push. Badge: ![CI](https://github.com/TechGuardCoders/Graveyard-Shift/actions/workflows/ci.yml/badge.svg)
