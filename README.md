@@ -100,3 +100,14 @@ go test ./... -v
 ## CI
 
 GitHub Actions runs `pytest` and `go vet` + `go test ./...` on push. Badge: ![CI](https://github.com/TechGuardCoders/Graveyard-Shift/actions/workflows/ci.yml/badge.svg)
+
+## Docker
+
+Multi-stage, multi-arch image (linux/amd64 + linux/arm64) built on `python:3.12-slim`:
+
+```bash
+docker build -t graveyard-shift .
+docker run --rm graveyard-shift   # runs the test suite as a smoke check
+```
+
+For the Go/Rust variant, see the note at the top of the Dockerfile.
